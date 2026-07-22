@@ -113,6 +113,164 @@
   }
   .add-bar button:hover{filter:brightness(1.08);}
 
+  .sync-box{
+    margin-bottom:28px;
+  }
+  .sync-toggle{
+    background:none;
+    border:1px dashed var(--hairline);
+    color:var(--text-muted);
+    font-size:12px;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-family:'Noto Sans TC',sans-serif;
+    width:100%;
+    text-align:left;
+  }
+  .sync-toggle:hover{border-color:var(--gold); color:var(--gold);}
+  .sync-panel{
+    display:none;
+    margin-top:10px;
+    padding:16px;
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    background:var(--bg-surface);
+  }
+  .sync-panel.open{display:block;}
+  .sync-desc{
+    font-size:12.5px;
+    color:var(--text-muted);
+    line-height:1.6;
+    margin:0 0 10px;
+  }
+  .sync-desc code{
+    background:var(--bg-surface-hi);
+    padding:1px 5px;
+    border-radius:4px;
+  }
+  .sync-output{
+    width:100%;
+    background:var(--bg-surface-hi);
+    border:1px solid var(--hairline);
+    border-radius:8px;
+    color:var(--text);
+    font-family:'Inter',monospace;
+    font-size:12px;
+    padding:10px;
+    resize:vertical;
+  }
+  .sync-copy-btn{
+    margin-top:10px;
+    background:var(--gold);
+    color:#10241C;
+    border:none;
+    font-weight:700;
+    padding:8px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:13px;
+    font-family:'Noto Sans TC',sans-serif;
+  }
+  .sync-copy-btn:hover{filter:brightness(1.08);}
+  .sync-copy-status{
+    margin-left:10px;
+    font-size:12px;
+    color:var(--down);
+  }
+
+  .lock-screen{
+    position:fixed;
+    inset:0;
+    background:var(--bg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+  }
+  .lock-box{
+    text-align:center;
+    padding:40px;
+  }
+  .lock-title{
+    font-family:'Noto Serif TC',serif;
+    font-size:20px;
+    margin-bottom:20px;
+  }
+  .lock-input{
+    display:block;
+    width:220px;
+    background:var(--bg-surface);
+    border:1px solid var(--hairline);
+    color:var(--text);
+    padding:12px 16px;
+    border-radius:10px;
+    font-size:16px;
+    text-align:center;
+    margin:0 auto 14px;
+  }
+  .lock-btn{
+    background:var(--gold);
+    color:#10241C;
+    border:none;
+    font-weight:700;
+    padding:10px 30px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:14px;
+    font-family:'Noto Sans TC',sans-serif;
+  }
+  .lock-error{
+    color:var(--up);
+    font-size:12px;
+    margin-top:12px;
+    min-height:16px;
+  }
+
+  .gh-panel{
+    margin-top:10px;
+    padding:16px;
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    background:var(--bg-surface);
+    display:none;
+  }
+  .gh-panel.open{display:block;}
+  .gh-panel label{
+    display:block;
+    font-size:11px;
+    color:var(--text-muted);
+    margin:10px 0 4px;
+  }
+  .gh-panel input{
+    width:100%;
+    background:var(--bg-surface-hi);
+    border:1px solid var(--hairline);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:13px;
+    font-family:'Inter',monospace;
+  }
+  .gh-panel .gh-save-btn{
+    margin-top:12px;
+    background:var(--gold);
+    color:#10241C;
+    border:none;
+    font-weight:700;
+    padding:8px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:13px;
+    font-family:'Noto Sans TC',sans-serif;
+  }
+  .gh-status{
+    margin-top:10px;
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.6;
+  }
+
   /* Grid */
   .grid{
     display:grid;
@@ -413,7 +571,15 @@
 </style>
 </head>
 <body>
-<div class="wrap">
+<div id="lockScreen" class="lock-screen">
+  <div class="lock-box">
+    <p class="lock-title">🔒 台股觀察儀表板</p>
+    <input id="lockInput" type="password" class="lock-input" placeholder="輸入密碼" />
+    <button id="lockBtn" class="lock-btn">進入</button>
+    <p id="lockError" class="lock-error"></p>
+  </div>
+</div>
+<div class="wrap" id="mainWrap" style="display:none;">
   <header>
     <div>
       <p class="eyebrow">My Watchlist · 個人觀察名單</p>
@@ -431,6 +597,38 @@
     <button id="addBtn">加入觀察</button>
   </div>
 
+  <div class="sync-box">
+    <button id="syncToggle" class="sync-toggle">⚙ GitHub 自動同步設定（新增股票要自動同步到後端，先在這裡設定一次）</button>
+    <div id="syncPanel" class="sync-panel">
+      <p class="sync-desc">設定好之後，之後在網頁上「加入觀察」的股票會<b>自動同步</b>到 GitHub 的 <code>watchlist.json</code>，並自動觸發新聞／股價／獲利的抓取排程，不用再手動去 GitHub 操作。金鑰只會存在你這台裝置的瀏覽器裡，不會寫進公開的網站程式碼。</p>
+
+      <label>GitHub 帳號</label>
+      <input id="ghOwner" type="text" placeholder="例如 itei7385-7385" />
+      <label>Repository 名稱</label>
+      <input id="ghRepo" type="text" placeholder="例如 tw-stock-dashboard" />
+      <label>Personal Access Token（權限請只勾選這個 repo 的 Contents + Actions 讀寫）</label>
+      <input id="ghToken" type="password" placeholder="ghp_ 開頭的權杖" />
+      <button id="ghSaveBtn" class="gh-save-btn">💾 儲存設定</button>
+      <div id="ghStatus" class="gh-status"></div>
+
+      <details style="margin-top:14px;">
+        <summary style="cursor:pointer;font-size:12px;color:var(--text-muted);">沒有 Token？點這裡看申請步驟</summary>
+        <p class="sync-desc" style="margin-top:8px;">
+          1. 打開 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color:var(--gold);">github.com/settings/personal-access-tokens/new</a><br>
+          2. Repository access 選「Only select repositories」，選你的儀表板 repo<br>
+          3. Permissions 展開 → <b>Contents</b> 設為 Read and write、<b>Actions</b> 設為 Read and write<br>
+          4. 拉到最下面按 Generate token，把產生的字串（ghp_ 開頭）貼到上面欄位
+        </p>
+      </details>
+
+      <hr style="border-color:var(--hairline);margin:16px 0;">
+      <p class="sync-desc">或者不想設定金鑰，也可以繼續用手動複製貼上的方式：</p>
+      <textarea id="syncOutput" class="sync-output" readonly rows="6"></textarea>
+      <button id="syncCopyBtn" class="sync-copy-btn">📋 複製 watchlist.json 內容</button>
+      <span id="syncCopyStatus" class="sync-copy-status"></span>
+    </div>
+  </div>
+
   <div class="grid" id="grid">
     <div class="empty">
       <div class="big">載入中…</div>
@@ -446,7 +644,7 @@
     右側會顯示 <b>獲利快照</b>（營業毛利／營業利益／稅前淨利／本期淨利／累計EPS），資料來自證交所公開的季報，<b>每週更新一次</b>（財報本來就是季更，不是天天變），目前只涵蓋「一般業」，金融/證券/保險/金控類股暫不支援。<br>
     每檔卡片下方的「分析筆記」欄位可手動貼上你跟 Claude 聊天分析出的合理股價區間 / 技術型態判讀，方便對照。<br>
     本頁面僅供個人資訊整理使用，不構成投資建議。<br>
-    <span style="opacity:0.5;">版本標記：2026-07-22-v9</span>
+    <span style="opacity:0.5;">版本標記：2026-07-22-v11</span>
   </footer>
 </div>
 
@@ -848,7 +1046,92 @@ async function refresh(){
   }
 }
 
-document.getElementById('addBtn').addEventListener('click', ()=>{
+// ---- 密碼鎖 ----
+const LOCK_PASSWORD = '0323';
+function tryUnlock(){
+  const val = document.getElementById('lockInput').value;
+  if(val === LOCK_PASSWORD){
+    localStorage.setItem('dashboard-unlocked', '1');
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('mainWrap').style.display = 'block';
+  } else {
+    document.getElementById('lockError').textContent = '密碼錯誤';
+  }
+}
+document.getElementById('lockBtn').addEventListener('click', tryUnlock);
+document.getElementById('lockInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') tryUnlock(); });
+if(localStorage.getItem('dashboard-unlocked') === '1'){
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('mainWrap').style.display = 'block';
+}
+
+// ---- GitHub 自動同步 ----
+function getGhConfig(){
+  return {
+    owner: localStorage.getItem('gh-owner') || '',
+    repo: localStorage.getItem('gh-repo') || '',
+    token: localStorage.getItem('gh-token') || ''
+  };
+}
+function saveGhConfig(owner, repo, token){
+  localStorage.setItem('gh-owner', owner);
+  localStorage.setItem('gh-repo', repo);
+  localStorage.setItem('gh-token', token);
+}
+function ghConfigured(){
+  const c = getGhConfig();
+  return !!(c.owner && c.repo && c.token);
+}
+async function ghApi(path, options={}){
+  const c = getGhConfig();
+  return fetch(`https://api.github.com/repos/${c.owner}/${c.repo}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${c.token}`,
+      'Accept': 'application/vnd.github+json',
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+}
+async function syncWatchlistToGithub(){
+  if(!ghConfigured()) return { ok:false, reason:'尚未設定 GitHub 金鑰' };
+  try{
+    const getRes = await ghApi('/contents/watchlist.json');
+    if(!getRes.ok) throw new Error(`讀取 watchlist.json 失敗（HTTP ${getRes.status}，檢查帳號/repo名稱/權杖權限）`);
+    const fileData = await getRes.json();
+    const newContent = buildWatchlistJson();
+    const b64 = btoa(unescape(encodeURIComponent(newContent)));
+    const putRes = await ghApi('/contents/watchlist.json', {
+      method: 'PUT',
+      body: JSON.stringify({ message: 'Update watchlist.json via dashboard', content: b64, sha: fileData.sha })
+    });
+    if(!putRes.ok) throw new Error(`寫入 watchlist.json 失敗（HTTP ${putRes.status}）`);
+    return { ok:true };
+  }catch(e){
+    return { ok:false, reason: e.message };
+  }
+}
+async function triggerWorkflow(filename){
+  if(!ghConfigured()) return;
+  try{ await ghApi(`/actions/workflows/${filename}/dispatches`, { method:'POST', body: JSON.stringify({ ref:'main' }) }); }
+  catch(e){ console.warn('觸發 workflow 失敗', filename, e); }
+}
+
+document.getElementById('ghSaveBtn').addEventListener('click', ()=>{
+  const owner = document.getElementById('ghOwner').value.trim();
+  const repo = document.getElementById('ghRepo').value.trim();
+  const token = document.getElementById('ghToken').value.trim();
+  const statusEl = document.getElementById('ghStatus');
+  if(!owner || !repo || !token){
+    statusEl.textContent = '三個欄位都要填才能儲存';
+    return;
+  }
+  saveGhConfig(owner, repo, token);
+  statusEl.textContent = '已儲存！之後在網頁上加入觀察的股票會自動同步到 GitHub。';
+});
+
+document.getElementById('addBtn').addEventListener('click', async ()=>{
   const input = document.getElementById('codeInput');
   const raw = input.value.trim();
   if(!raw) return;
@@ -857,12 +1140,33 @@ document.getElementById('addBtn').addEventListener('click', ()=>{
     alert(`找不到「${raw}」對應的股票代號。\n名稱查詢目前只涵蓋上市股票，上櫃股票請直接輸入代號。`);
     return;
   }
-  if(!watchlist.includes(code)){
+  const isNew = !watchlist.includes(code);
+  if(isNew){
     watchlist.push(code);
     saveList(watchlist);
   }
   input.value = '';
   refresh();
+
+  if(isNew && ghConfigured()){
+    const btn = document.getElementById('addBtn');
+    const originalText = btn.textContent;
+    btn.textContent = '同步中…';
+    btn.disabled = true;
+    const result = await syncWatchlistToGithub();
+    if(result.ok){
+      await Promise.all([
+        triggerWorkflow('update-news.yml'),
+        triggerWorkflow('update-financials.yml'),
+        triggerWorkflow('update-prices.yml')
+      ]);
+      btn.textContent = '✓ 已同步';
+    } else {
+      btn.textContent = '同步失敗';
+      alert('已加入本機觀察名單，但同步到 GitHub 失敗：' + result.reason + '\n（可以改用下面「複製 watchlist.json 內容」手動處理）');
+    }
+    setTimeout(()=>{ btn.textContent = originalText; btn.disabled = false; }, 2500);
+  }
 });
 
 document.getElementById('codeInput').addEventListener('keydown', (e)=>{
@@ -870,6 +1174,45 @@ document.getElementById('codeInput').addEventListener('keydown', (e)=>{
 });
 
 document.getElementById('refreshBtn').addEventListener('click', refresh);
+
+function buildWatchlistJson(){
+  const list = watchlist.map(code => {
+    const name = (dailyAllMap[code] && dailyAllMap[code].name) || code;
+    return { code, name };
+  });
+  return JSON.stringify(list, null, 2);
+}
+
+document.getElementById('syncToggle').addEventListener('click', ()=>{
+  const panel = document.getElementById('syncPanel');
+  const isOpen = panel.classList.contains('open');
+  if(isOpen){
+    panel.classList.remove('open');
+    return;
+  }
+  document.getElementById('syncOutput').value = buildWatchlistJson();
+  const c = getGhConfig();
+  document.getElementById('ghOwner').value = c.owner;
+  document.getElementById('ghRepo').value = c.repo;
+  document.getElementById('ghToken').value = c.token;
+  if(ghConfigured()){
+    document.getElementById('ghStatus').textContent = '目前已設定，新增股票會自動同步。';
+  }
+  panel.classList.add('open');
+});
+
+document.getElementById('syncCopyBtn').addEventListener('click', async ()=>{
+  const text = document.getElementById('syncOutput').value;
+  const statusEl = document.getElementById('syncCopyStatus');
+  try{
+    await navigator.clipboard.writeText(text);
+    statusEl.textContent = '已複製！';
+  }catch(e){
+    document.getElementById('syncOutput').select();
+    statusEl.textContent = '請手動 Ctrl+C 複製（已幫你選取）';
+  }
+  setTimeout(()=>{ statusEl.textContent=''; }, 3000);
+});
 
 (async function init(){
   await Promise.all([loadDailyAll(), loadNews(), loadFinancials(), loadPrices()]); // 先載完基礎資料、新聞、獲利、股價歷史，才能正確產生卡片內容
