@@ -18,7 +18,7 @@ function fetchJson(url){
   const watchlist = JSON.parse(fs.readFileSync('watchlist.json', 'utf8'));
 
   const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 200); // 抓約200個日曆天，扣掉假日大概還有130+個交易日
+  startDate.setDate(startDate.getDate() - 730); // 抓約2年份，讓圖表可以往前拖曳看更久的走勢
   const startDateStr = startDate.toISOString().slice(0, 10);
 
   const byCode = {};
