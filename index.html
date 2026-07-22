@@ -446,7 +446,7 @@
     右側會顯示 <b>獲利快照</b>（營業毛利／營業利益／稅前淨利／本期淨利／累計EPS），資料來自證交所公開的季報，<b>每週更新一次</b>（財報本來就是季更，不是天天變），目前只涵蓋「一般業」，金融/證券/保險/金控類股暫不支援。<br>
     每檔卡片下方的「分析筆記」欄位可手動貼上你跟 Claude 聊天分析出的合理股價區間 / 技術型態判讀，方便對照。<br>
     本頁面僅供個人資訊整理使用，不構成投資建議。<br>
-    <span style="opacity:0.5;">版本標記：2026-07-22-v7</span>
+    <span style="opacity:0.5;">版本標記：2026-07-22-v9</span>
   </footer>
 </div>
 
@@ -542,7 +542,10 @@ function renderPriceChart(code){
   volSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
   volSeries.setData(rows.map(r => ({ time: r.date, value: r.volume, color: r.close >= r.open ? 'rgba(209,69,58,0.5)' : 'rgba(63,191,143,0.5)' })));
 
-  chart.timeScale().fitContent();
+  chart.timeScale().setVisibleLogicalRange({
+    from: Math.max(0, rows.length - 130),
+    to: rows.length - 1
+  }); // 預設只顯示近半年左右，往前拖曳/縮小滾輪可以看到完整2年資料
 }
 
 async function loadNews(){
@@ -724,7 +727,11 @@ function computeCardData(code, quotes, errorMsg){
       low = fmt(d.low);
       vol = fmt(d.vol);
       changeText = '收盤價（非即時）';
-      const tagTime = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}) : '';
+      const weekdayNames = ['日','一','二','三','四','五','六'];
+      const dataUpdatedAtDate = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
+      const tagTime = dataUpdatedAtDate
+        ? dataUpdatedAtDate.toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}) + '(' + weekdayNames[dataUpdatedAtDate.getDay()] + ')'
+        : '';
       sourceTag = `<span style="font-size:11px;color:var(--flat);border:1px solid var(--flat);border-radius:10px;padding:1px 8px;margin-left:8px;" title="資料更新時間 ${tagTime}">昨收${tagTime ? ' · '+tagTime : ''}</span>`;
       dir = 'flat';
     } else if(errorMsg){
@@ -797,7 +804,7 @@ function render(quotes, errorMsg){
       </div>
       <div class="card-right">
         ${renderProfitBlock(code)}
-        <div class="chart-label">股價走勢（近${priceRangeLabel(code)}，資料來源 FinMind，非即時）</div>
+        <div class="chart-label">股價走勢（預設顯示近半年，可拖曳/滾輪往前看到近2年，資料來源 FinMind，非即時）</div>
         <div class="chart-container" id="chart-${code}"></div>
       </div>
     `;
