@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root{
     --bg: #0F241C;
@@ -249,21 +250,6 @@
     letter-spacing:0.05em;
   }
 
-  .chart-toggle{
-    margin-top:12px;
-    width:100%;
-    background:none;
-    border:1px solid var(--hairline);
-    color:var(--gold);
-    padding:8px;
-    border-radius:8px;
-    cursor:pointer;
-    font-size:12.5px;
-    font-family:'Noto Sans TC',sans-serif;
-    transition:border-color .15s, background .15s;
-  }
-  .chart-toggle:hover{border-color:var(--gold); background:rgba(201,162,39,0.08);}
-
   .news-block{
     margin-top:14px;
     border-top:1px solid var(--hairline);
@@ -311,22 +297,26 @@
     letter-spacing:0.05em;
     margin-bottom:10px;
   }
-  .profit-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px 16px;
+  .profit-table{
+    width:100%;
+    border-collapse:collapse;
     font-size:12.5px;
-    color:var(--text-muted);
   }
-  .profit-grid div span{
-    display:block;
+  .profit-table th{
+    text-align:left;
+    color:var(--text-muted);
+    font-weight:500;
+    padding:4px 6px;
+    border-bottom:1px solid var(--hairline);
+  }
+  .profit-table td{
+    padding:5px 6px;
     color:var(--text);
     font-family:'Inter',sans-serif;
     font-variant-numeric:tabular-nums;
-    font-size:16px;
-    font-weight:600;
-    margin-top:2px;
+    border-bottom:1px solid var(--hairline);
   }
+  .profit-table tr:last-child td{border-bottom:none;}
   .profit-note{
     margin-top:10px;
     font-size:11px;
@@ -337,23 +327,29 @@
     font-size:12px;
     color:var(--text-muted);
   }
-  .card.chart-expanded{
-    grid-column: 1 / -1;
-  }
+
   .card-right{
     margin-top:16px;
   }
+  .chart-label{
+    font-size:11px;
+    color:var(--text-muted);
+    letter-spacing:0.05em;
+    margin-bottom:8px;
+  }
   .chart-container{
-    margin-top:10px;
-    height:380px;
+    height:280px;
     border-radius:10px;
     overflow:hidden;
     border:1px solid var(--hairline);
-    display:none;
   }
-  .chart-container.open{display:block; height:520px;}
+  .chart-empty{
+    font-size:12px;
+    color:var(--text-muted);
+    padding:20px;
+  }
 
-  /* 桌機/平板：圖表直接並排在右側，不用點展開 */
+  /* 桌機/平板：右欄直接並排在左邊資訊卡旁邊 */
   @media (min-width: 900px){
     .grid{
       grid-template-columns: 1fr;
@@ -373,16 +369,8 @@
       min-width:0;
       margin-top:0;
     }
-    .chart-toggle{
-      display:none; /* 桌機不需要展開按鈕，圖表預設就在右邊 */
-    }
     .chart-container{
-      height:460px;
-      min-height:460px;
-    }
-    .chart-container.open{height:460px;}
-    .card.chart-expanded{
-      grid-column:auto; /* 桌機排版下每張卡本來就佔滿一整排，不需要這個class效果 */
+      height:420px;
     }
   }
 
@@ -453,12 +441,12 @@
   <footer>
     即時報價（若能載入）來自臺灣證券交易所盤中資訊；<b>若無法載入即時報價（常見於瀏覽器安全限制），會自動改用每日收盤資料</b>，由 GitHub Actions 每天定期自動抓取並存進這個 repo，卡片上會標示「昨收」與資料更新時間。<br>
     輸入框可以打股票代號或中文名稱（例如「台積電」），名稱查詢只涵蓋<b>上市股票</b>，上櫃股票請直接輸入代號。<br>
-    每張卡片可展開 <b>TradingView 技術分析圖表</b>（K線＋均線／RSI／成交量，可自行調整指標），資料約有 15 分鐘延遲；上櫃股票的交易所前綴是用猜的，若圖表顯示查無此股，代表猜錯，之後可以再手動調整。<br>
+    每張卡片右側會直接顯示 <b>股價K線走勢圖</b>（近半年，含成交量），資料來自 FinMind 官方股價歷史，畫圖用 TradingView 開源的 Lightweight Charts 函式庫（不經過他們的即時資料源，所以不會有登入限制的問題），每天收盤後自動更新一次，非即時。<br>
     每張卡片下方會顯示 <b>相關新聞</b>（由 Google 新聞彙整經濟日報、工商時報等多家來源，每日自動更新數次），只涵蓋 repo 裡 <code>watchlist.json</code> 名單中的股票，要新增股票的新聞，需要另外編輯那個檔案。<br>
     右側會顯示 <b>獲利快照</b>（營業毛利／營業利益／稅前淨利／本期淨利／累計EPS），資料來自證交所公開的季報，<b>每週更新一次</b>（財報本來就是季更，不是天天變），目前只涵蓋「一般業」，金融/證券/保險/金控類股暫不支援。<br>
     每檔卡片下方的「分析筆記」欄位可手動貼上你跟 Claude 聊天分析出的合理股價區間 / 技術型態判讀，方便對照。<br>
     本頁面僅供個人資訊整理使用，不構成投資建議。<br>
-    <span style="opacity:0.5;">版本標記：2026-07-22-v6</span>
+    <span style="opacity:0.5;">版本標記：2026-07-22-v7</span>
   </footer>
 </div>
 
@@ -501,6 +489,61 @@ let newsByCode = {};       // code -> [{title, link, source, pubDate}]
 let newsUpdatedAt = null;
 let profitByCode = {};     // code -> {period, grossProfit, operatingIncome, preTaxIncome, netIncome, eps}
 let profitUpdatedAt = null;
+let pricesByCode = {};     // code -> [{date, open, high, low, close, volume}]
+let pricesUpdatedAt = null;
+
+async function loadPrices(){
+  try{
+    const res = await fetch(`./prices.json?_=${Date.now()}`);
+    if(!res.ok) throw new Error('prices.json not found');
+    const payload = await res.json();
+    pricesByCode = payload.byCode || {};
+    pricesUpdatedAt = payload.updatedAt || null;
+  }catch(e){
+    console.warn('prices.json 載入失敗（可能是股價歷史抓取的 GitHub Actions 還沒跑過）', e);
+  }
+}
+
+function priceRangeLabel(code){
+  const rows = pricesByCode[code];
+  if(!rows || rows.length === 0) return '--';
+  const n = rows.length;
+  if(n >= 60) return Math.round(n/20) + '個月';
+  return n + '個交易日';
+}
+
+function renderPriceChart(code){
+  const container = document.getElementById(`chart-${code}`);
+  if(!container) return;
+  const rows = pricesByCode[code];
+  if(!rows || rows.length === 0 || typeof LightweightCharts === 'undefined'){
+    container.innerHTML = `<div class="chart-empty">尚無股價歷史資料 — 排程可能還沒跑過，或這檔股票查無資料</div>`;
+    return;
+  }
+  container.innerHTML = '';
+  const chart = LightweightCharts.createChart(container, {
+    autoSize: true,
+    layout: { background: { color: 'transparent' }, textColor: '#9FB0A6' },
+    grid: { vertLines: { color: '#2C4A3A' }, horzLines: { color: '#2C4A3A' } },
+    timeScale: { borderColor: '#2C4A3A' },
+    rightPriceScale: { borderColor: '#2C4A3A' },
+  });
+  const candleSeries = chart.addCandlestickSeries({
+    upColor: '#D1453A', downColor: '#3FBF8F',
+    borderUpColor: '#D1453A', borderDownColor: '#3FBF8F',
+    wickUpColor: '#D1453A', wickDownColor: '#3FBF8F',
+  });
+  candleSeries.setData(rows.map(r => ({ time: r.date, open: r.open, high: r.high, low: r.low, close: r.close })));
+
+  const volSeries = chart.addHistogramSeries({
+    priceFormat: { type: 'volume' },
+    priceScaleId: '',
+  });
+  volSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+  volSeries.setData(rows.map(r => ({ time: r.date, value: r.volume, color: r.close >= r.open ? 'rgba(209,69,58,0.5)' : 'rgba(63,191,143,0.5)' })));
+
+  chart.timeScale().fitContent();
+}
 
 async function loadNews(){
   try{
@@ -543,37 +586,27 @@ function findField(row, keywordsInclude, keywordsExclude = []){
 }
 
 function renderProfitBlock(code){
-  const row = profitByCode[code];
-  if(!row){
-    return `<div class="profit-block"><div class="profit-label">獲利快照（最新一期季報）</div><div class="profit-empty">尚無資料 — 可能是股票不在 watchlist.json 名單裡、排程還沒跑過，或這檔屬於金融/證券/保險/金控類股（目前只涵蓋一般業，科目不同還沒支援）</div></div>`;
+  const info = profitByCode[code];
+  if(!info || !info.quarters || info.quarters.length === 0){
+    return `<div class="profit-block"><div class="profit-label">獲利快照（近5季）</div><div class="profit-empty">尚無資料 — 可能是股票不在 watchlist.json 名單裡、排程還沒跑過，或這檔股票查無財報資料</div></div>`;
   }
 
-  const period = row['出表日期'] || row['年度'] || row['季別'] ||
-    [row['資料年度'], row['資料季別']].filter(Boolean).join(' ') || null;
-  const grossProfit = findField(row, ['營業毛利']);
-  const netIncome = findField(row, ['本期淨利']) || findField(row, ['淨利'], ['每股', '率']);
-  const eps = findField(row, ['每股盈餘']) || findField(row, ['基本每股盈餘']);
-
-  const gotAnything = grossProfit || netIncome || eps;
-
-  if(!gotAnything){
-    // 已知欄位名稱都對不上，先把原始資料列出來，方便排查實際欄位長怎樣
-    const rawRows = Object.entries(row).slice(0, 10).map(([k,v]) => `<div>${k}<span>${v}</span></div>`).join('');
-    return `<div class="profit-block">
-      <div class="profit-label">獲利快照 · 欄位比對失敗，先顯示原始資料供排查</div>
-      <div class="profit-grid">${rawRows}</div>
-    </div>`;
-  }
+  const rows = info.quarters.map(q => `
+    <tr>
+      <td>${q.period}</td>
+      <td>${fmtNum(q.quarterEPS)}</td>
+      <td>${fmtNum(q.cumulativeEPS)}</td>
+    </tr>
+  `).join('');
 
   return `<div class="profit-block">
-    <div class="profit-label">獲利快照 · ${period || '期別未知'}${profitUpdatedAt ? '（抓取於 ' + new Date(profitUpdatedAt).toLocaleDateString('zh-TW') + '）' : ''}</div>
-    <div class="profit-grid">
-      <div>毛利<span>${fmtNum(grossProfit)}</span></div>
-      <div>淨利<span>${fmtNum(netIncome)}</span></div>
-      <div>EPS<span>${fmtNum(eps)}</span></div>
-      <div>累計EPS<span>${fmtNum(eps)}</span></div>
-    </div>
-    <div class="profit-note">＊台灣財報季報本身就是「累計」數字（例如Q3申報=前三季累計），目前資料來源只有一個累計EPS欄位，所以EPS與累計EPS暫時顯示同一個數字。</div>
+    <div class="profit-label">獲利快照 · 近5季${profitUpdatedAt ? '（抓取於 ' + new Date(profitUpdatedAt).toLocaleDateString('zh-TW') + '）' : ''}</div>
+    <table class="profit-table">
+      <thead><tr><th>季別</th><th>單季EPS</th><th>累計EPS</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="profit-note">今年累計EPS（最新一期，${info.latestPeriod || '--'}）：<b>${fmtNum(info.latestCumulativeEPS)}</b></div>
+    <div class="profit-note">＊單季EPS是用「本期累計 － 上一季累計」換算出來的（Q1本身就是單季）；資料來源 FinMind，非官方即時財報。</div>
   </div>`;
 }
 
@@ -764,76 +797,16 @@ function render(quotes, errorMsg){
       </div>
       <div class="card-right">
         ${renderProfitBlock(code)}
-        <button class="chart-toggle" data-code="${code}">📈 展開技術分析圖表（含均線／RSI／成交量，可自行加指標）</button>
-        <div class="chart-symbol-debug" id="symbol-debug-${code}" style="font-size:10px;color:var(--text-muted);margin-top:6px;"></div>
-        <div class="chart-container" id="chart-${code}"><div class="tradingview-widget-container__widget"></div></div>
+        <div class="chart-label">股價走勢（近${priceRangeLabel(code)}，資料來源 FinMind，非即時）</div>
+        <div class="chart-container" id="chart-${code}"></div>
       </div>
     `;
     grid.appendChild(card);
   });
 
-  const isWide = window.matchMedia('(min-width: 900px)').matches;
-
-  function openChart(code, btn, card){
-    const container = document.getElementById(`chart-${code}`);
-    container.classList.add('open');
-    if(card) card.classList.add('chart-expanded');
-    if(btn) btn.textContent = '📉 收合圖表';
-    if(!container.dataset.loaded){
-      container.dataset.loaded = '1';
-      const exchange = dailyAllMap[code] ? 'TWSE' : 'OTC';
-      const symbolUsed = `${exchange}:${code}`;
-      const debugEl = document.getElementById(`symbol-debug-${code}`);
-      if(debugEl) debugEl.textContent = `圖表代號：${symbolUsed}（如果圖表顯示的公司跟這行不一樣，代表是 TradingView 那端的問題，不是我們代號傳錯）`;
-      const cfg = {
-        autosize: true,
-        symbol: symbolUsed,
-        interval: 'D',
-        timezone: 'Asia/Taipei',
-        theme: 'dark',
-        style: '1',
-        locale: 'zh_TW',
-        toolbar_bg: '#163024',
-        enable_publishing: false,
-        hide_top_toolbar: false,
-        hide_legend: false,
-        allow_symbol_change: false,
-        studies: ['MASimple@tv-basicstudies', 'RSI@tv-basicstudies', 'Volume@tv-basicstudies'],
-        support_host: 'https://www.tradingview.com'
-      };
-      const script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-      script.async = true;
-      script.text = JSON.stringify(cfg);
-      container.classList.add('tradingview-widget-container');
-      container.appendChild(script);
-    }
-  }
-
-  if(isWide){
-    // 桌機/平板：圖表預設直接顯示在右側，不用點展開
-    document.querySelectorAll('.card').forEach(card=>{
-      const btn = card.querySelector('.chart-toggle');
-      const code = btn?.dataset.code;
-      if(code) openChart(code, null, card);
-    });
-  }
-
-  document.querySelectorAll('.chart-toggle').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const code = btn.dataset.code;
-      const card = btn.closest('.card');
-      const container = document.getElementById(`chart-${code}`);
-      const isOpen = container.classList.contains('open');
-      if(isOpen){
-        container.classList.remove('open');
-        card.classList.remove('chart-expanded');
-        btn.textContent = '📈 展開技術分析圖表（含均線／RSI／成交量，可自行加指標）';
-        return;
-      }
-      openChart(code, btn, card);
-    });
+  document.querySelectorAll('.card').forEach(card=>{
+    const code = card.dataset.code;
+    if(code) renderPriceChart(code);
   });
 
   document.querySelectorAll('.remove-btn').forEach(btn=>{
@@ -892,13 +865,14 @@ document.getElementById('codeInput').addEventListener('keydown', (e)=>{
 document.getElementById('refreshBtn').addEventListener('click', refresh);
 
 (async function init(){
-  await Promise.all([loadDailyAll(), loadNews(), loadFinancials()]); // 先載完基礎資料、新聞、獲利，才能正確產生卡片內容
+  await Promise.all([loadDailyAll(), loadNews(), loadFinancials(), loadPrices()]); // 先載完基礎資料、新聞、獲利、股價歷史，才能正確產生卡片內容
   refresh();
 })();
 setInterval(refresh, 30000);
 setInterval(loadDailyAll, 10 * 60 * 1000); // 每10分鐘更新一次備援資料集
 setInterval(loadNews, 30 * 60 * 1000); // 每30分鐘重新讀一次新聞
 setInterval(loadFinancials, 60 * 60 * 1000); // 每小時重新讀一次獲利資料（本來就只有週更）
+setInterval(loadPrices, 60 * 60 * 1000); // 每小時重新讀一次股價歷史（本來就只有日更）
 </script>
 </body>
 </html>
