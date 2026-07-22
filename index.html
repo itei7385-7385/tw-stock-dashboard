@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>台股觀察儀表板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0F241C;
+    --bg-surface: #163024;
+    --bg-surface-hi: #1C3A2C;
+    --hairline: #2C4A3A;
+    --text: #EDE6D6;
+    --text-muted: #9FB0A6;
+    --up: #D1453A;      /* 漲：紅 */
+    --down: #3FBF8F;    /* 跌：綠 */
+    --flat: #B8A968;
+    --gold: #C9A227;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(201,162,39,0.10), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Noto Sans TC','Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:40px 20px 80px;}
+
+  /* Header */
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:16px;
+    border-bottom:1px solid var(--hairline);
+    padding-bottom:24px;
+    margin-bottom:28px;
+  }
+  .eyebrow{
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    letter-spacing:0.28em;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Noto Serif TC',serif;
+    font-weight:900;
+    font-size:34px;
+    margin:0;
+    letter-spacing:0.02em;
+  }
+  .meta{
+    text-align:right;
+    color:var(--text-muted);
+    font-size:13px;
+    line-height:1.6;
+  }
+  .meta button{
+    margin-top:6px;
+    background:none;
+    border:1px solid var(--hairline);
+    color:var(--text);
+    font-size:12px;
+    padding:6px 14px;
+    border-radius:20px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    transition:border-color .15s, background .15s;
+  }
+  .meta button:hover{border-color:var(--gold); background:rgba(201,162,39,0.08);}
+
+  /* Add stock bar */
+  .add-bar{
+    display:flex;
+    gap:10px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  .add-bar input{
+    flex:1;
+    min-width:180px;
+    background:var(--bg-surface);
+    border:1px solid var(--hairline);
+    color:var(--text);
+    padding:12px 16px;
+    border-radius:10px;
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+  }
+  .add-bar input::placeholder{color:var(--text-muted);}
+  .add-bar button{
+    background:var(--gold);
+    color:#10241C;
+    border:none;
+    font-weight:700;
+    padding:12px 22px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:14px;
+    font-family:'Noto Sans TC',sans-serif;
+    transition:filter .15s;
+  }
+  .add-bar button:hover{filter:brightness(1.08);}
+
+  /* Grid */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(260px,1fr));
+    gap:16px;
+  }
+
+  .card{
+    position:relative;
+    background:var(--bg-surface);
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:20px;
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    left:0;top:0;bottom:0;
+    width:3px;
+  }
+  .card.up::before{background:var(--up);}
+  .card.down::before{background:var(--down);}
+  .card.flat::before{background:var(--flat);}
+
+  .card-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:14px;
+  }
+  .code-name .code{
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    color:var(--text-muted);
+    letter-spacing:0.05em;
+  }
+  .code-name .name{
+    font-family:'Noto Serif TC',serif;
+    font-weight:700;
+    font-size:19px;
+    margin-top:2px;
+  }
+  .remove-btn{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+    padding:2px 6px;
+  }
+  .remove-btn:hover{color:var(--up);}
+
+  /* seal badge */
+  .seal{
+    position:absolute;
+    top:16px;
+    right:44px;
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    border:1.5px solid currentColor;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Noto Serif TC',serif;
+    font-weight:900;
+    font-size:14px;
+    transform:rotate(-8deg);
+    opacity:0.85;
+  }
+  .card.up .seal{color:var(--up);}
+  .card.down .seal{color:var(--down);}
+  .card.flat .seal{color:var(--flat);}
+
+  .price-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .price{
+    font-family:'Inter',sans-serif;
+    font-weight:800;
+    font-size:32px;
+    font-variant-numeric:tabular-nums;
+  }
+  .card.up .price{color:var(--up);}
+  .card.down .price{color:var(--down);}
+  .change{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    font-variant-numeric:tabular-nums;
+  }
+  .card.up .change{color:var(--up);}
+  .card.down .change{color:var(--down);}
+
+  .stat-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px 16px;
+    font-size:12.5px;
+    color:var(--text-muted);
+    border-top:1px solid var(--hairline);
+    padding-top:12px;
+  }
+  .stat-grid div span{
+    display:block;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-variant-numeric:tabular-nums;
+    font-size:13px;
+    margin-top:2px;
+  }
+
+  .note-field{
+    margin-top:12px;
+    width:100%;
+    background:var(--bg-surface-hi);
+    border:1px solid var(--hairline);
+    border-radius:8px;
+    color:var(--text);
+    font-family:'Noto Sans TC',sans-serif;
+    font-size:12.5px;
+    padding:8px 10px;
+    resize:vertical;
+    min-height:36px;
+  }
+  .note-label{
+    font-size:11px;
+    color:var(--text-muted);
+    margin-top:10px;
+    letter-spacing:0.05em;
+  }
+
+  .chart-toggle{
+    margin-top:12px;
+    width:100%;
+    background:none;
+    border:1px solid var(--hairline);
+    color:var(--gold);
+    padding:8px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:12.5px;
+    font-family:'Noto Sans TC',sans-serif;
+    transition:border-color .15s, background .15s;
+  }
+  .chart-toggle:hover{border-color:var(--gold); background:rgba(201,162,39,0.08);}
+
+  .news-block{
+    margin-top:14px;
+    border-top:1px solid var(--hairline);
+    padding-top:10px;
+  }
+  .news-label{
+    font-size:11px;
+    color:var(--text-muted);
+    letter-spacing:0.05em;
+    margin-bottom:8px;
+  }
+  .news-item{
+    display:block;
+    font-size:12.5px;
+    color:var(--text);
+    text-decoration:none;
+    padding:6px 0;
+    border-bottom:1px dashed var(--hairline);
+    line-height:1.5;
+  }
+  .news-item:last-child{border-bottom:none;}
+  .news-item:hover{color:var(--gold);}
+  .news-item .src{
+    display:block;
+    font-size:11px;
+    color:var(--text-muted);
+    margin-top:2px;
+  }
+  .news-empty{
+    font-size:12px;
+    color:var(--text-muted);
+  }
+
+  .profit-block{
+    margin-top:0;
+    margin-bottom:14px;
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    padding:14px 16px;
+    background:var(--bg-surface-hi);
+  }
+  .profit-label{
+    font-size:11px;
+    color:var(--gold);
+    letter-spacing:0.05em;
+    margin-bottom:10px;
+  }
+  .profit-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px 16px;
+    font-size:12.5px;
+    color:var(--text-muted);
+  }
+  .profit-grid div span{
+    display:block;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-variant-numeric:tabular-nums;
+    font-size:16px;
+    font-weight:600;
+    margin-top:2px;
+  }
+  .profit-note{
+    margin-top:10px;
+    font-size:11px;
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+  .profit-empty{
+    font-size:12px;
+    color:var(--text-muted);
+  }
+  .card.chart-expanded{
+    grid-column: 1 / -1;
+  }
+  .card-right{
+    margin-top:16px;
+  }
+  .chart-container{
+    margin-top:10px;
+    height:380px;
+    border-radius:10px;
+    overflow:hidden;
+    border:1px solid var(--hairline);
+    display:none;
+  }
+  .chart-container.open{display:block; height:520px;}
+
+  /* 桌機/平板：圖表直接並排在右側，不用點展開 */
+  @media (min-width: 900px){
+    .grid{
+      grid-template-columns: 1fr;
+    }
+    .card{
+      display:flex;
+      align-items:stretch;
+      gap:24px;
+    }
+    .card-left{
+      flex:0 0 300px;
+      min-width:0;
+    }
+    .card-right{
+      display:block;
+      flex:1;
+      min-width:0;
+      margin-top:0;
+    }
+    .chart-toggle{
+      display:none; /* 桌機不需要展開按鈕，圖表預設就在右邊 */
+    }
+    .chart-container{
+      height:460px;
+      min-height:460px;
+    }
+    .chart-container.open{height:460px;}
+    .card.chart-expanded{
+      grid-column:auto; /* 桌機排版下每張卡本來就佔滿一整排，不需要這個class效果 */
+    }
+  }
+
+  .card-status{
+    margin-top:10px;
+    font-size:12px;
+    color:var(--text-muted);
+  }
+
+  .empty{
+    text-align:center;
+    padding:60px 20px;
+    color:var(--text-muted);
+    border:1px dashed var(--hairline);
+    border-radius:14px;
+    grid-column:1/-1;
+  }
+  .empty .big{
+    font-family:'Noto Serif TC',serif;
+    font-size:20px;
+    color:var(--text);
+    margin-bottom:8px;
+  }
+
+  footer{
+    margin-top:50px;
+    padding-top:20px;
+    border-top:1px solid var(--hairline);
+    color:var(--text-muted);
+    font-size:12px;
+    line-height:1.8;
+  }
+  footer b{color:var(--gold);}
+
+  @media (max-width:520px){
+    h1{font-size:26px;}
+    .meta{text-align:left;}
+    header{flex-direction:column;align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">My Watchlist · 個人觀察名單</p>
+      <h1>台股觀察儀表板</h1>
+    </div>
+    <div class="meta">
+      <div id="updatedAt">尚未更新</div>
+      <button id="refreshBtn">↻ 重新整理</button>
+    </div>
+  </header>
+
+  <div class="add-bar">
+    <input id="codeInput" type="text" list="stockNames" placeholder="輸入股票代號或名稱，例如 2330 或 台積電" />
+    <datalist id="stockNames"></datalist>
+    <button id="addBtn">加入觀察</button>
+  </div>
+
+  <div class="grid" id="grid">
+    <div class="empty">
+      <div class="big">載入中…</div>
+      <div>正在讀取股票基礎資料</div>
+    </div>
+  </div>
+
+  <footer>
+    即時報價（若能載入）來自臺灣證券交易所盤中資訊；<b>若無法載入即時報價（常見於瀏覽器安全限制），會自動改用每日收盤資料</b>，由 GitHub Actions 每天定期自動抓取並存進這個 repo，卡片上會標示「昨收」與資料更新時間。<br>
+    輸入框可以打股票代號或中文名稱（例如「台積電」），名稱查詢只涵蓋<b>上市股票</b>，上櫃股票請直接輸入代號。<br>
+    每張卡片可展開 <b>TradingView 技術分析圖表</b>（K線＋均線／RSI／成交量，可自行調整指標），資料約有 15 分鐘延遲；上櫃股票的交易所前綴是用猜的，若圖表顯示查無此股，代表猜錯，之後可以再手動調整。<br>
+    每張卡片下方會顯示 <b>相關新聞</b>（由 Google 新聞彙整經濟日報、工商時報等多家來源，每日自動更新數次），只涵蓋 repo 裡 <code>watchlist.json</code> 名單中的股票，要新增股票的新聞，需要另外編輯那個檔案。<br>
+    右側會顯示 <b>獲利快照</b>（營業毛利／營業利益／稅前淨利／本期淨利／累計EPS），資料來自證交所公開的季報，<b>每週更新一次</b>（財報本來就是季更，不是天天變），目前只涵蓋「一般業」，金融/證券/保險/金控類股暫不支援。<br>
+    每檔卡片下方的「分析筆記」欄位可手動貼上你跟 Claude 聊天分析出的合理股價區間 / 技術型態判讀，方便對照。<br>
+    本頁面僅供個人資訊整理使用，不構成投資建議。<br>
+    <span style="opacity:0.5;">版本標記：2026-07-22-v6</span>
+  </footer>
+</div>
+
+<script>
+const STORAGE_KEY = 'tw-watchlist-v1';
+const NOTES_KEY = 'tw-watchlist-notes-v1';
+
+function loadList(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : ['2330','1409'];
+  }catch(e){ return ['2330','1409']; }
+}
+function saveList(list){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+function loadNotes(){
+  try{
+    const raw = localStorage.getItem(NOTES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveNotes(notes){
+  localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+}
+
+let watchlist = loadList();
+let notes = loadNotes();
+
+const grid = document.getElementById('grid');
+const updatedAt = document.getElementById('updatedAt');
+
+// 每日收盤資料集：作為即時報價失敗時的備援，也用來做「輸入名稱找代號」
+// 來源：證交所開放資料 STOCK_DAY_ALL（只涵蓋上市股票，不含上櫃）
+let dailyAllMap = {};      // code -> {name, close, ...}
+let nameToCode = {};       // name -> code
+let nameIndex = [];        // [{code, name}] 供名稱模糊搜尋
+let dataUpdatedAt = null;  // data.json 的資料更新時間
+let newsByCode = {};       // code -> [{title, link, source, pubDate}]
+let newsUpdatedAt = null;
+let profitByCode = {};     // code -> {period, grossProfit, operatingIncome, preTaxIncome, netIncome, eps}
+let profitUpdatedAt = null;
+
+async function loadNews(){
+  try{
+    const res = await fetch(`./news.json?_=${Date.now()}`);
+    if(!res.ok) throw new Error('news.json not found');
+    const payload = await res.json();
+    newsByCode = payload.byCode || {};
+    newsUpdatedAt = payload.updatedAt || null;
+  }catch(e){
+    console.warn('news.json 載入失敗（可能是新聞抓取的 GitHub Actions 還沒跑過，或這檔股票不在 watchlist.json 裡）', e);
+  }
+}
+
+async function loadFinancials(){
+  try{
+    const res = await fetch(`./financials.json?_=${Date.now()}`);
+    if(!res.ok) throw new Error('financials.json not found');
+    const payload = await res.json();
+    profitByCode = payload.byCode || {};
+    profitUpdatedAt = payload.updatedAt || null;
+  }catch(e){
+    console.warn('financials.json 載入失敗（可能是財務資料抓取的 GitHub Actions 還沒跑過）', e);
+  }
+}
+
+function fmtNum(v){
+  if(v === undefined || v === null || v === '') return '--';
+  const n = parseFloat(String(v).replace(/,/g,''));
+  if(isNaN(n)) return String(v);
+  return n.toLocaleString('zh-TW');
+}
+
+function findField(row, keywordsInclude, keywordsExclude = []){
+  const keys = Object.keys(row);
+  const hit = keys.find(k =>
+    keywordsInclude.every(kw => k.includes(kw)) &&
+    keywordsExclude.every(kw => !k.includes(kw))
+  );
+  return hit ? row[hit] : null;
+}
+
+function renderProfitBlock(code){
+  const row = profitByCode[code];
+  if(!row){
+    return `<div class="profit-block"><div class="profit-label">獲利快照（最新一期季報）</div><div class="profit-empty">尚無資料 — 可能是股票不在 watchlist.json 名單裡、排程還沒跑過，或這檔屬於金融/證券/保險/金控類股（目前只涵蓋一般業，科目不同還沒支援）</div></div>`;
+  }
+
+  const period = row['出表日期'] || row['年度'] || row['季別'] ||
+    [row['資料年度'], row['資料季別']].filter(Boolean).join(' ') || null;
+  const grossProfit = findField(row, ['營業毛利']);
+  const netIncome = findField(row, ['本期淨利']) || findField(row, ['淨利'], ['每股', '率']);
+  const eps = findField(row, ['每股盈餘']) || findField(row, ['基本每股盈餘']);
+
+  const gotAnything = grossProfit || netIncome || eps;
+
+  if(!gotAnything){
+    // 已知欄位名稱都對不上，先把原始資料列出來，方便排查實際欄位長怎樣
+    const rawRows = Object.entries(row).slice(0, 10).map(([k,v]) => `<div>${k}<span>${v}</span></div>`).join('');
+    return `<div class="profit-block">
+      <div class="profit-label">獲利快照 · 欄位比對失敗，先顯示原始資料供排查</div>
+      <div class="profit-grid">${rawRows}</div>
+    </div>`;
+  }
+
+  return `<div class="profit-block">
+    <div class="profit-label">獲利快照 · ${period || '期別未知'}${profitUpdatedAt ? '（抓取於 ' + new Date(profitUpdatedAt).toLocaleDateString('zh-TW') + '）' : ''}</div>
+    <div class="profit-grid">
+      <div>毛利<span>${fmtNum(grossProfit)}</span></div>
+      <div>淨利<span>${fmtNum(netIncome)}</span></div>
+      <div>EPS<span>${fmtNum(eps)}</span></div>
+      <div>累計EPS<span>${fmtNum(eps)}</span></div>
+    </div>
+    <div class="profit-note">＊台灣財報季報本身就是「累計」數字（例如Q3申報=前三季累計），目前資料來源只有一個累計EPS欄位，所以EPS與累計EPS暫時顯示同一個數字。</div>
+  </div>`;
+}
+
+function renderNewsBlock(code){
+  const items = newsByCode[code];
+  if(!items || items.length === 0){
+    return `<div class="news-block"><div class="news-label">相關新聞</div><div class="news-empty">尚無新聞資料（此股票可能不在 repo 的 watchlist.json 名單裡，或新聞排程還沒跑過）</div></div>`;
+  }
+  const rows = items.map(n => `
+    <a class="news-item" href="${n.link}" target="_blank" rel="noopener">
+      ${n.title}
+      <span class="src">${n.source || ''}${n.pubDate ? ' · ' + new Date(n.pubDate).toLocaleDateString('zh-TW') : ''}</span>
+    </a>
+  `).join('');
+  return `<div class="news-block"><div class="news-label">相關新聞${newsUpdatedAt ? '（更新於 ' + new Date(newsUpdatedAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}) + '）' : ''}</div>${rows}</div>`;
+}
+
+async function loadDailyAll(){
+  try{
+    const url = `./data.json?_=${Date.now()}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('data.json not found');
+    const payload = await res.json();
+    const rows = payload.rows || [];
+    dataUpdatedAt = payload.updatedAt || null;
+    rows.forEach(row=>{
+      const code = row.Code;
+      const name = row.Name;
+      dailyAllMap[code] = {
+        name,
+        close: parseFloat(row.ClosingPrice),
+        open: row.OpeningPrice,
+        high: row.HighestPrice,
+        low: row.LowestPrice,
+        vol: row.TradeVolume ? Math.round(parseFloat(row.TradeVolume)/1000) : '--'
+      };
+      nameToCode[name] = code;
+      nameIndex.push({code, name});
+    });
+    // 填入 datalist 供打字建議
+    const dl = document.getElementById('stockNames');
+    if(dl){
+      dl.innerHTML = nameIndex.map(i=>`<option value="${i.name}">${i.code}</option>`).join('');
+    }
+  }catch(e){
+    console.warn('data.json 載入失敗（可能是 GitHub Actions 還沒跑過第一次），名稱查詢與備援收盤價暫時無法使用', e);
+  }
+}
+
+// 把使用者輸入（可能是代號或名稱）轉成代號
+function resolveInput(input){
+  const trimmed = input.trim();
+  if(!trimmed) return null;
+  if(/^\d+$/.test(trimmed)) return trimmed; // 純數字視為代號
+  if(nameToCode[trimmed]) return nameToCode[trimmed]; // 精確比對名稱
+  const hit = nameIndex.find(item => item.name.includes(trimmed)); // 模糊比對
+  if(hit) return hit.code;
+  return null;
+}
+
+function isOTC(code){
+  return false;
+}
+
+async function fetchQuotes(codes){
+  if(codes.length === 0) return {};
+  const ex = codes.map(c => `tse_${c}.tw`).join('|');
+  const otcEx = codes.map(c => `otc_${c}.tw`).join('|');
+  const url = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=${ex}|${otcEx}&json=1&delay=0&_=${Date.now()}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('network');
+  const data = await res.json();
+  const map = {};
+  (data.msgArray || []).forEach(item => {
+    map[item.c] = item; // c = 股票代號
+  });
+  return map;
+}
+
+function fmt(v){
+  if(v === undefined || v === null || v === '' || v === '-') return '--';
+  return v;
+}
+
+function computeCardData(code, quotes, errorMsg){
+  const q = quotes[code];
+  let dir = 'flat', priceText = '--', changeText = '尚無資料', name = code, open='--', high='--', low='--', vol='--';
+  let sourceTag = '';
+
+  if(q){
+    const price = parseFloat(q.z) || parseFloat(q.b?.split('_')[0]) || null;
+    const prevClose = parseFloat(q.y);
+    name = q.n || code;
+    open = fmt(q.o);
+    high = fmt(q.h);
+    low = fmt(q.l);
+    vol = fmt(q.v);
+
+    if(price && prevClose){
+      const diff = price - prevClose;
+      const pct = (diff/prevClose*100);
+      dir = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+      priceText = price.toFixed(2);
+      changeText = `${diff>=0?'+':''}${diff.toFixed(2)} (${diff>=0?'+':''}${pct.toFixed(2)}%)`;
+    } else if(price){
+      priceText = price.toFixed(2);
+    }
+  } else {
+    const d = dailyAllMap[code];
+    if(d){
+      name = d.name || code;
+      priceText = isNaN(d.close) ? '--' : d.close.toFixed(2);
+      open = fmt(d.open);
+      high = fmt(d.high);
+      low = fmt(d.low);
+      vol = fmt(d.vol);
+      changeText = '收盤價（非即時）';
+      const tagTime = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}) : '';
+      sourceTag = `<span style="font-size:11px;color:var(--flat);border:1px solid var(--flat);border-radius:10px;padding:1px 8px;margin-left:8px;" title="資料更新時間 ${tagTime}">昨收${tagTime ? ' · '+tagTime : ''}</span>`;
+      dir = 'flat';
+    } else if(errorMsg){
+      changeText = '載入失敗，稍後重試';
+    } else {
+      changeText = '查無此代號 / 尚無成交（也可能是上櫃股票，收盤備援資料集不含上櫃）';
+    }
+  }
+  return {dir, priceText, changeText, name, open, high, low, vol, sourceTag};
+}
+
+function render(quotes, errorMsg){
+  const renderedCodes = Array.from(grid.querySelectorAll('.card')).map(c=>c.dataset.code);
+  const sameSet = renderedCodes.length === watchlist.length && renderedCodes.every((c,i)=>c===watchlist[i]);
+  if(sameSet && renderedCodes.length>0){
+    // 觀察名單沒變，只更新報價文字，不重建 DOM（避免筆記欄、已載入的圖表被重置）
+    watchlist.forEach(code=>{
+      const card = grid.querySelector(`.card[data-code="${code}"]`);
+      if(!card) return;
+      const d = computeCardData(code, quotes, errorMsg);
+      card.className = `card ${d.dir}` + (card.classList.contains('chart-expanded') ? ' chart-expanded' : '');
+      card.querySelector('.seal').textContent = d.dir==='up'?'漲':d.dir==='down'?'跌':'平';
+      card.querySelector('.name').innerHTML = `${d.name}${d.sourceTag}`;
+      card.querySelector('.price').textContent = d.priceText;
+      card.querySelector('.change').textContent = d.changeText;
+      const stats = card.querySelectorAll('.stat-grid span');
+      stats[0].textContent = d.open;
+      stats[1].textContent = d.vol;
+      stats[2].textContent = d.high;
+      stats[3].textContent = d.low;
+    });
+    return;
+  }
+
+  grid.innerHTML = '';
+  if(watchlist.length === 0){
+    grid.innerHTML = `<div class="empty"><div class="big">觀察名單是空的</div><div>在上面輸入股票代號，開始建立你的看板</div></div>`;
+    return;
+  }
+
+  watchlist.forEach(code => {
+    const d = computeCardData(code, quotes, errorMsg);
+    const card = document.createElement('div');
+    card.dataset.code = code;
+
+    card.className = `card ${d.dir}`;
+    card.innerHTML = `
+      <div class="card-left">
+        <div class="seal">${d.dir==='up'?'漲':d.dir==='down'?'跌':'平'}</div>
+        <div class="card-top">
+          <div class="code-name">
+            <div class="code">${code}</div>
+            <div class="name">${d.name}${d.sourceTag}</div>
+          </div>
+          <button class="remove-btn" data-code="${code}" title="移除">✕</button>
+        </div>
+        <div class="price-row">
+          <div class="price">${d.priceText}</div>
+          <div class="change">${d.changeText}</div>
+        </div>
+        <div class="stat-grid">
+          <div>開盤<span>${d.open}</span></div>
+          <div>成交量(張)<span>${d.vol}</span></div>
+          <div>最高<span>${d.high}</span></div>
+          <div>最低<span>${d.low}</span></div>
+        </div>
+        <div class="note-label">分析筆記（可手動編輯，會存在這台裝置上）</div>
+        <textarea class="note-field" data-code="${code}" placeholder="貼上合理股價區間、型態判讀等...">${notes[code] || ''}</textarea>
+        ${renderNewsBlock(code)}
+      </div>
+      <div class="card-right">
+        ${renderProfitBlock(code)}
+        <button class="chart-toggle" data-code="${code}">📈 展開技術分析圖表（含均線／RSI／成交量，可自行加指標）</button>
+        <div class="chart-symbol-debug" id="symbol-debug-${code}" style="font-size:10px;color:var(--text-muted);margin-top:6px;"></div>
+        <div class="chart-container" id="chart-${code}"><div class="tradingview-widget-container__widget"></div></div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  const isWide = window.matchMedia('(min-width: 900px)').matches;
+
+  function openChart(code, btn, card){
+    const container = document.getElementById(`chart-${code}`);
+    container.classList.add('open');
+    if(card) card.classList.add('chart-expanded');
+    if(btn) btn.textContent = '📉 收合圖表';
+    if(!container.dataset.loaded){
+      container.dataset.loaded = '1';
+      const exchange = dailyAllMap[code] ? 'TWSE' : 'OTC';
+      const symbolUsed = `${exchange}:${code}`;
+      const debugEl = document.getElementById(`symbol-debug-${code}`);
+      if(debugEl) debugEl.textContent = `圖表代號：${symbolUsed}（如果圖表顯示的公司跟這行不一樣，代表是 TradingView 那端的問題，不是我們代號傳錯）`;
+      const cfg = {
+        autosize: true,
+        symbol: symbolUsed,
+        interval: 'D',
+        timezone: 'Asia/Taipei',
+        theme: 'dark',
+        style: '1',
+        locale: 'zh_TW',
+        toolbar_bg: '#163024',
+        enable_publishing: false,
+        hide_top_toolbar: false,
+        hide_legend: false,
+        allow_symbol_change: false,
+        studies: ['MASimple@tv-basicstudies', 'RSI@tv-basicstudies', 'Volume@tv-basicstudies'],
+        support_host: 'https://www.tradingview.com'
+      };
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+      script.async = true;
+      script.text = JSON.stringify(cfg);
+      container.classList.add('tradingview-widget-container');
+      container.appendChild(script);
+    }
+  }
+
+  if(isWide){
+    // 桌機/平板：圖表預設直接顯示在右側，不用點展開
+    document.querySelectorAll('.card').forEach(card=>{
+      const btn = card.querySelector('.chart-toggle');
+      const code = btn?.dataset.code;
+      if(code) openChart(code, null, card);
+    });
+  }
+
+  document.querySelectorAll('.chart-toggle').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const code = btn.dataset.code;
+      const card = btn.closest('.card');
+      const container = document.getElementById(`chart-${code}`);
+      const isOpen = container.classList.contains('open');
+      if(isOpen){
+        container.classList.remove('open');
+        card.classList.remove('chart-expanded');
+        btn.textContent = '📈 展開技術分析圖表（含均線／RSI／成交量，可自行加指標）';
+        return;
+      }
+      openChart(code, btn, card);
+    });
+  });
+
+  document.querySelectorAll('.remove-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const code = btn.dataset.code;
+      watchlist = watchlist.filter(c=>c!==code);
+      saveList(watchlist);
+      delete notes[code];
+      saveNotes(notes);
+      render(quotes);
+    });
+  });
+
+  document.querySelectorAll('.note-field').forEach(field=>{
+    field.addEventListener('input', ()=>{
+      notes[field.dataset.code] = field.value;
+      saveNotes(notes);
+    });
+  });
+}
+
+async function refresh(){
+  updatedAt.textContent = '更新中…';
+  try{
+    const quotes = await fetchQuotes(watchlist);
+    render(quotes);
+    const now = new Date();
+    updatedAt.textContent = '最後更新：' + now.toLocaleTimeString('zh-TW', {hour12:false});
+  }catch(e){
+    render({}, true);
+    updatedAt.textContent = '更新失敗，可能是網路或瀏覽器限制，稍後再試';
+  }
+}
+
+document.getElementById('addBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('codeInput');
+  const raw = input.value.trim();
+  if(!raw) return;
+  const code = resolveInput(raw);
+  if(!code){
+    alert(`找不到「${raw}」對應的股票代號。\n名稱查詢目前只涵蓋上市股票，上櫃股票請直接輸入代號。`);
+    return;
+  }
+  if(!watchlist.includes(code)){
+    watchlist.push(code);
+    saveList(watchlist);
+  }
+  input.value = '';
+  refresh();
+});
+
+document.getElementById('codeInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') document.getElementById('addBtn').click();
+});
+
+document.getElementById('refreshBtn').addEventListener('click', refresh);
+
+(async function init(){
+  await Promise.all([loadDailyAll(), loadNews(), loadFinancials()]); // 先載完基礎資料、新聞、獲利，才能正確產生卡片內容
+  refresh();
+})();
+setInterval(refresh, 30000);
+setInterval(loadDailyAll, 10 * 60 * 1000); // 每10分鐘更新一次備援資料集
+setInterval(loadNews, 30 * 60 * 1000); // 每30分鐘重新讀一次新聞
+setInterval(loadFinancials, 60 * 60 * 1000); // 每小時重新讀一次獲利資料（本來就只有週更）
+</script>
+</body>
+</html>
